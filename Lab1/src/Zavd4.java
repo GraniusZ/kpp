@@ -1,99 +1,86 @@
-import java.util.Arrays;
 import java.lang.reflect.Array;
 
-public class Zavd4 {
-    public static void main(String[] args) {
-        int[] intArray = createIntArray(2);
-        System.out.println("intArray: " + arrayToString(intArray));
+class ArrayUtils {
 
-        double[][] doubleArray = createDoubleMatrix(3, 3);
-        System.out.println("doubleMatrix: \n" + matrixToString(doubleArray));
+    public static Object createArray(Class<?> componentType, int length) {
+        return Array.newInstance(componentType, length);
+    }
 
-        Integer[] intRArray = createArray(Integer.class, 5, 0);
-        System.out.println("IntengerArray: " + Arrays.toString(intRArray));
-
-        Double[][] doubleRMatrix = createMatrix(Double.class, 2, 3, 0.0);
-        System.out.println("DoubleMatrix: \n" + matrixToString(doubleRMatrix));
-
-        intArray = resizeArray(intArray, 5);
-        System.out.println("intArray resized: " + arrayToString(intArray));
-
-        doubleArray = resizeMatrix(doubleArray, 4, 4);
-        System.out.println("doubleArray resized: \n" + matrixToString(doubleArray));
-
-        intRArray = resizeArray(intRArray, 10, Integer.class);
-        System.out.println("IntengerArray resized: " + Arrays.toString(intRArray));
-
-        doubleRMatrix = resizeMatrix(doubleRMatrix, 3, 5, Double.class);
-        System.out.println("DoubleMatrix resized: \n" + matrixToString(doubleRMatrix));
-    }
-    public static int[] createIntArray(int size) {
-        return new int[size];
-    }
-    public static double[][] createDoubleMatrix(int rows, int cols) {
-        return new double[rows][cols];
-    }
-    public static <T> T[] createArray(Class<T> clazz, int size, T defaultValue) {
-        @SuppressWarnings("unchecked")
-        T[] array = (T[]) Array.newInstance(clazz, size);
-        Arrays.fill(array, defaultValue);
-        return array;
-    }
-    public static <T> T[][] createMatrix(Class<T> componentType, int rows, int cols, T defaultValue) {
-        @SuppressWarnings("unchecked")
-        T[][] matrix = (T[][]) Array.newInstance(componentType, rows, cols);
-        for (int i = 0; i < matrix.length; i++) {
-            matrix[i] = createArray(componentType, cols, defaultValue);
-        }
-        return matrix;
-    }
-    public static int[] resizeArray(int[] array, int newSize) {
-        return Arrays.copyOf(array, newSize);
-    }
-    public static double[][] resizeMatrix(double[][] matrix, int newRows, int newCols) {
-        double[][] newMatrix = Arrays.copyOf(matrix, newRows);
-        for (int i = 0; i < newRows; i++) {
-            if (i < matrix.length) {
-                newMatrix[i] = Arrays.copyOf(matrix[i], newCols);
-            } else {
-                newMatrix[i] = new double[newCols];
-            }
-        }
-        return newMatrix;
-    }
-    public static <T> T[] resizeArray(T[] array, int newSize, Class<T> clazz) {
-        @SuppressWarnings("unchecked")
-        T[] newArray = (T[]) Array.newInstance(clazz, newSize);
-        System.arraycopy(array, 0, newArray, 0, Math.min(array.length, newSize));
+    public static Object resizeArray(Object array, int newSize) {
+        int oldSize = Array.getLength(array);
+        Class<?> elementType = array.getClass().getComponentType();
+        Object newArray = Array.newInstance(elementType, newSize);
+        System.arraycopy(array, 0, newArray, 0, Math.min(oldSize, newSize));
         return newArray;
     }
-    public static <T> T[][] resizeMatrix(T[][] matrix, int newRows, int newCols, Class<T> clazz) {
-        @SuppressWarnings("unchecked")
-        T[][] newMatrix = (T[][]) Array.newInstance(matrix[0].getClass(), newRows);
-        for (int i = 0; i < newRows; i++) {
-            if (i < matrix.length) {
-                newMatrix[i] = resizeArray(matrix[i], newCols, clazz);
-            } else {
-                newMatrix[i] = createArray(clazz, newCols, null);
-            }
+
+    public static Object createMatrix(Class<?> componentType, int rows, int cols) {
+        return Array.newInstance(componentType, rows, cols);
+    }
+
+    public static Object resizeMatrix(Object matrix, int newRows, int newCols) {
+        int oldRows = Array.getLength(matrix);
+        if (oldRows == 0) {
+            return createMatrix(matrix.getClass().getComponentType(), newRows, newCols);
+        }
+        int oldCols = Array.getLength(Array.get(matrix, 0));
+        Object newMatrix = Array.newInstance(matrix.getClass().getComponentType().getComponentType(), newRows, newCols);
+        for (int i = 0; i < Math.min(oldRows, newRows); i++) {
+            Object oldRow = Array.get(matrix, i);
+            Object newRow = Array.get(newMatrix, i);
+            System.arraycopy(oldRow, 0, newRow, 0, Math.min(oldCols, newCols));
         }
         return newMatrix;
     }
-    public static String arrayToString(int[] array) {
-        return Arrays.toString(array);
-    }
-    public static String matrixToString(double[][] matrix) {
-        StringBuilder sb = new StringBuilder();
-        for (double[] row : matrix) {
-            sb.append(Arrays.toString(row)).append("\n");
+
+    // Перетворення масиву в рядок
+    public static String arrayToString(Object array) {
+        if (!array.getClass().isArray()) {
+            return "Not an array";
         }
+
+        StringBuilder sb = new StringBuilder();
+        int length = Array.getLength(array);
+        Class<?> componentType = array.getClass().getComponentType();
+
+        // Перевіряємо, чи є елементи масиву також масивами (для матриць)
+        if (componentType.isArray()) {
+            sb.append(componentType.getComponentType().getTypeName() + "[][" + componentType.getName().split("\\[").length + "] = {");
+            for (int i = 0; i < length; i++) {
+                sb.append(arrayToString(Array.get(array, i)) + (i < length - 1 ? ", " : ""));
+            }
+        } else {
+            sb.append(componentType.getTypeName() + "[" + length + "] = {");
+            for (int i = 0; i < length; i++) {
+                sb.append(Array.get(array, i) + (i < length - 1 ? ", " : ""));
+            }
+        }
+        sb.append("}");
         return sb.toString();
     }
-    public static String matrixToString(Double[][] matrix) {
-        StringBuilder sb = new StringBuilder();
-        for (Double[] row : matrix) {
-            sb.append(Arrays.toString(row)).append("\n");
-        }
-        return sb.toString();
+}
+public class Zavd4 {
+
+    public static void main(String[] args) {
+        Object intArray = ArrayUtils.createArray(int.class, 2);
+        System.out.println(ArrayUtils.arrayToString(intArray));
+
+        Object stringArray = ArrayUtils.createArray(String.class, 3);
+        System.out.println(ArrayUtils.arrayToString(stringArray));
+
+        Object doubleArray = ArrayUtils.createArray(Double.class, 5);
+        System.out.println(ArrayUtils.arrayToString(doubleArray));
+
+        Object intMatrix = ArrayUtils.createMatrix(int.class, 3, 5);
+        System.out.println(ArrayUtils.arrayToString(intMatrix));
+
+        intMatrix = ArrayUtils.resizeMatrix(intMatrix, 4, 6);
+        System.out.println(ArrayUtils.arrayToString(intMatrix));
+
+        intMatrix = ArrayUtils.resizeMatrix(intMatrix, 3, 7);
+        System.out.println(ArrayUtils.arrayToString(intMatrix));
+
+        intMatrix = ArrayUtils.resizeMatrix(intMatrix, 2, 2);
+        System.out.println(ArrayUtils.arrayToString(intMatrix));
     }
 }
