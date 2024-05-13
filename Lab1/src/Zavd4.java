@@ -43,7 +43,7 @@ class ArrayUtils {
         int length = Array.getLength(array);
         Class<?> componentType = array.getClass().getComponentType();
 
-        // Перевіряємо, чи є елементи масиву також масивами (для матриць)
+
         if (componentType.isArray()) {
             sb.append(componentType.getComponentType().getTypeName() + "[][" + componentType.getName().split("\\[").length + "] = {");
             for (int i = 0; i < length; i++) {
